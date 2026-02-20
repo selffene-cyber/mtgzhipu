@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// MTG Automotora - Schema Completo
+// Version: 1.0
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +10,399 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== USUARIOS Y AUTENTICACIÓN ====================
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String?
+  role         String   @default("sales") // admin, sales, ops
+  phone        String?
+  avatar       String?
+  isActive     Boolean  @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relaciones
+  vehiclesCreated    Vehicle[]         @relation("VehicleCreator")
+  reservations       Reservation[]
+  leads              Lead[]
+  auctions           Auction[]         @relation("AuctionWinner")
+  bids               Bid[]
+  consignments       Consignment[]     @relation("ConsignmentReviewer")
+  auditLogs          AuditLog[]
+  documents          Document[]
+  sessions           Session[]
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==================== VEHÍCULOS ====================
+
+model Vehicle {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  brand          String
+  model          String
+  year           Int
+  price          Int
+  km             Int?
+  vin            String?
+  plate          String?
+  region         String?
+  city           String?
+  description    String?
+  transmission   String?  // automatic, manual
+  fuelType       String?  // gasoline, diesel, electric, hybrid
+  color          String?
+  doors          Int?
+  engine         String?  // Cilindrada ej: "2.0L"
+  horsepower     Int?
+  status         String   @default("draft") // draft, published, hidden, reserved, sold, archived
+  
+  // Campos de consignación
+  isConsignment  Boolean  @default(false)
+  consignorId    String?
+  consignorName  String?
+  consignorPhone String?
+  commissionPct  Float?
+  
+  // Precios de costo (interno)
+  purchasePrice  Int?
+  
+  // Fechas
+  publishedAt    DateTime?
+  soldAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relaciones
+  photos           VehiclePhoto[]
+  documents        Document[]
+  reservations     Reservation[]
+  leads            Lead[]
+  auctions         Auction[]
+  consignment      Consignment?
+  createdBy        User?             @relation("VehicleCreator", fields: [createdById], references: [id])
+  createdById      String?
+}
+
+model VehiclePhoto {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  url         String
+  orderIndex  Int      @default(0)
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  vehicleId   String?
+  uploadedBy  String?
+  type        String   // contract, invoice, inspection, permit, other
+  name        String
+  url         String
+  createdAt   DateTime @default(now())
+
+  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  uploader    User?    @relation(fields: [uploadedBy], references: [id])
+}
+
+// ==================== RESERVAS ====================
+
+model Reservation {
+  id              String   @id @default(cuid())
+  vehicleId       String
+  userId          String?
+  
+  // Datos del cliente
+  customerName    String
+  customerEmail   String?
+  customerPhone   String
+  customerRut     String?  // RUT chileno
+  
+  // Montos y pagos
+  amount          Int      // Monto del abono
+  paymentMethod   String?  // mercadopago, webpay, transfer
+  paymentId       String?
+  idempotencyKey  String?  @unique
+  
+  // Estado y fechas
+  status          String   @default("pending_payment") // pending_payment, paid, confirmed, expired, cancelled, refunded
+  expiresAt       DateTime
+  confirmedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelledReason String?
+  
+  // Notas
+  notes           String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relaciones
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+  user            User?    @relation(fields: [userId], references: [id])
+  transactions    PaymentTransaction[]
+
+  @@index([vehicleId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// ==================== SUBASTAS ====================
+
+model Auction {
+  id                    String    @id @default(cuid())
+  vehicleId             String
+  
+  // Configuración de subasta
+  startingPrice         Int
+  minIncrement          Int       @default(100000)
+  depositAmount         Int       @default(50000)
+  
+  // Tiempos
+  startTime             DateTime
+  endTime               DateTime
+  paymentExpiresAt      DateTime?
+  
+  // Estado
+  status                String    @default("scheduled") // scheduled, active, ended_pending_payment, closed_won, closed_failed, cancelled
+  
+  // Ganador
+  winnerId              String?
+  winnerBidId           String?
+  finalPrice            Int?
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relaciones
+  vehicle               Vehicle   @relation(fields: [vehicleId], references: [id])
+  winner                User?     @relation("AuctionWinner", fields: [winnerId], references: [id])
+  bids                  Bid[]
+  transactions          PaymentTransaction[]
+
+  @@index([vehicleId])
+  @@index([status])
+  @@index([endTime])
+}
+
+model Bid {
+  id          String   @id @default(cuid())
+  auctionId   String
+  userId      String
+  amount      Int
+  isWinner    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  auction     Auction  @relation(fields: [auctionId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([auctionId])
+  @@index([amount])
+}
+
+// ==================== CONSIGNACIONES ====================
+
+model Consignment {
+  id              String   @id @default(cuid())
+  vehicleId       String?  @unique
+  
+  // Datos del consignante
+  ownerName       String
+  ownerEmail      String?
+  ownerPhone      String
+  ownerRut        String?
+  
+  // Datos del vehículo (pre-registro)
+  brand           String
+  model           String
+  year            Int
+  km              Int?
+  expectedPrice   Int?
+  
+  // Estado
+  status          String   @default("received") // received, under_review, approved, rejected, published
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  
+  // Condiciones
+  commissionPct   Float?
+  agreedPrice     Int?
+  
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relaciones
+  vehicle         Vehicle? @relation(fields: [vehicleId], references: [id])
+  reviewer        User?    @relation("ConsignmentReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([status])
+}
+
+// ==================== LEADS ====================
+
+model Lead {
+  id              String   @id @default(cuid())
+  vehicleId       String?
+  userId          String?
+  
+  // Datos del cliente
+  customerName    String
+  customerEmail   String?
+  customerPhone   String
+  
+  // Fuente y estado
+  source          String?  // whatsapp, web, instagram, facebook, referral
+  status          String   @default("new") // new, contacted, scheduled, closed_won, closed_lost
+  
+  // Seguimiento
+  notes           String?
+  lastContactAt   DateTime?
+  nextFollowUpAt  DateTime?
+  
+  // Conversión
+  convertedTo     String?  // reservation, auction
+  convertedAt     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relaciones
+  vehicle         Vehicle? @relation(fields: [vehicleId], references: [id])
+  user            User?    @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([vehicleId])
+}
+
+// ==================== PAGOS ====================
+
+model PaymentTransaction {
+  id              String   @id @default(cuid())
+  reservationId   String?
+  auctionId       String?
+  
+  // Proveedor
+  provider        String   // mercadopago, webpay, transfer
+  providerTxId    String?
+  
+  // Monto
+  amount          Int
+  currency        String   @default("CLP")
+  
+  // Estado
+  status          String   @default("pending") // pending, confirmed, failed, refunded, cancelled
+  idempotencyKey  String   @unique
+  
+  // Webhook
+  webhookPayload  String?
+  
+  // Fechas
+  confirmedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relaciones
+  reservation     Reservation? @relation(fields: [reservationId], references: [id])
+  auction         Auction?     @relation(fields: [auctionId], references: [id])
+
+  @@index([idempotencyKey])
+  @@index([provider])
+}
+
+// ==================== AUDITORÍA ====================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  tableName   String
+  recordId    String
+  action      String   // INSERT, UPDATE, DELETE
+  oldValues   String?  // JSON
+  newValues   String?  // JSON
+  userId      String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([tableName])
+  @@index([recordId])
+}
+
+// ==================== CONFIGURACIÓN ====================
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String   // JSON
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== RIFAS (Fase 3 - Condicional Legal) ====================
+
+model Raffle {
+  id              String   @id @default(cuid())
+  vehicleId       String
+  
+  ticketPrice     Int
+  totalTickets    Int
+  ticketsSold     Int      @default(0)
+  
+  startTime       DateTime
+  endTime         DateTime
+  
+  status          String   @default("draft") // draft, active, completed, cancelled
+  winnerTicket    Int?
+  winnerId        String?
+  
+  drawnAt         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tickets         RaffleTicket[]
+
+  @@index([status])
+}
+
+model RaffleTicket {
+  id              String   @id @default(cuid())
+  raffleId        String
+  ticketNumber    Int
+  
+  buyerName       String
+  buyerEmail      String?
+  buyerPhone      String
+  buyerRut        String?
+  
+  paymentId       String?
+  status          String   @default("reserved") // reserved, paid, cancelled
+  
+  createdAt       DateTime @default(now())
+
+  raffle          Raffle   @relation(fields: [raffleId], references: [id])
+
+  @@unique([raffleId, ticketNumber])
+  @@index([raffleId])
 }

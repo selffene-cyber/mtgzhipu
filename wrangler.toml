@@ -1,0 +1,29 @@
+# MTG Automotora - Cloudflare Pages Configuration
+# Este archivo configura los bindings para D1 (base de datos) y R2 (almacenamiento)
+
+name = "mtg-automotora"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Configuración de Pages
+pages_build_output_dir = ".vercel/output/static"
+
+# Base de datos D1
+[[d1_databases]]
+binding = "DB"
+database_name = "bdmtgzhipu"
+database_id = "PLACEHOLDER_D1_DATABASE_ID" # Reemplazar con el ID real después de crear la BD
+
+# Bucket R2 para almacenamiento de archivos (fotos de vehículos, documentos)
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "mtgzhipu-files"
+
+# Variables de entorno (las sensibles se configuran en el dashboard)
+[vars]
+ENVIRONMENT = "production"
+
+# Configuración para desarrollo local
+[dev]
+port = 3000
+local_protocol = "http"
