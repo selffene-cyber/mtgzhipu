@@ -1,0 +1,19 @@
+# Variables de entorno para desarrollo local
+# Copia este archivo a .dev.vars y completa los valores
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=MTG Automotora (Dev)
+
+# Authentication
+NEXTAUTH_SECRET=development-secret-change-in-production
+NEXTAUTH_URL=http://localhost:3000
+
+# Payment Gateways (sandbox)
+MERCADOPAGO_ACCESS_TOKEN=
+MERCADOPAGO_PUBLIC_KEY=
+WEBPAY_COMMERCE_CODE=
+WEBPAY_API_KEY=
+
+# WhatsApp
+WHATSAPP_NUMBER=+56912345678

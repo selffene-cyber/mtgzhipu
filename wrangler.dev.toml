@@ -1,0 +1,19 @@
+# Configuración para desarrollo local conectado a D1 remoto
+# Este archivo configura wrangler para acceder a la BD D1 desde local
+
+name = "mtg-automotora-dev"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Para desarrollo local, usamos la base de datos D1 remota
+[[d1_databases]]
+binding = "DB"
+database_name = "bdmtgzhipu"
+database_id = "PLACEHOLDER_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "mtgzhipu-files"
+
+[vars]
+ENVIRONMENT = "development"
