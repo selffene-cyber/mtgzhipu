@@ -19,11 +19,13 @@ const nextConfig: NextConfig = {
   
   // Reducir tamaño del bundle
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      'recharts',
+      'framer-motion'
+    ],
   },
-  
-  // Excluir dependencias pesadas del bundle
-  serverExternalPackages: ['@prisma/client', 'prisma'],
 };
 
 export default nextConfig;
