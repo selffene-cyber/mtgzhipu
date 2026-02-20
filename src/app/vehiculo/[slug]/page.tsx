@@ -1,7 +1,5 @@
 'use client';
 
-
-
 import { PublicLayout } from '@/components/layout/public-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
+import { getVehicleBySlug } from '@/lib/api-client';
 
 interface Vehicle {
   id: string;
@@ -83,11 +82,10 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
   useEffect(() => {
     async function fetchVehicle() {
       try {
-        const res = await fetch(`/api/vehicles/${resolvedParams.slug}`);
-        const data = await res.json();
+        const result = await getVehicleBySlug(resolvedParams.slug);
         
-        if (data.success) {
-          setVehicle(data.data);
+        if (result.success && result.data) {
+          setVehicle(result.data);
         } else {
           setError('Vehículo no encontrado');
         }
@@ -130,6 +128,10 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
     );
   }
 
+  const photos = vehicle.photos && vehicle.photos.length > 0 
+    ? vehicle.photos 
+    : [{ url: `https://picsum.photos/seed/${vehicle.slug}/800/600`, orderIndex: 0 }];
+
   return (
     <PublicLayout>
       <div className="container px-4 py-8">
@@ -147,7 +149,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
           <div className="space-y-4">
             <Carousel className="w-full">
               <CarouselContent>
-                {vehicle.photos.map((photo, index) => (
+                {photos.map((photo, index) => (
                   <CarouselItem key={index}>
                     <div className="aspect-[4/3] rounded-xl overflow-hidden bg-muted">
                       <img
@@ -159,7 +161,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              {vehicle.photos.length > 1 && (
+              {photos.length > 1 && (
                 <>
                   <CarouselPrevious className="left-4" />
                   <CarouselNext className="right-4" />
@@ -168,9 +170,9 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ slug: 
             </Carousel>
 
             {/* Thumbnails */}
-            {vehicle.photos.length > 1 && (
+            {photos.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {vehicle.photos.map((photo, index) => (
+                {photos.map((photo, index) => (
                   <div
                     key={index}
                     className="w-20 h-16 rounded-lg overflow-hidden bg-muted shrink-0 cursor-pointer hover:ring-2 ring-primary transition-all"

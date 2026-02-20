@@ -1,39 +1,41 @@
 'use client';
 
 import { AdminLayout } from '@/components/layout/admin-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Car,
   Users,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-  Eye,
-  MessageSquare,
-  ShoppingCart,
   Clock,
+  DollarSign,
+  ArrowRight,
+  TrendingUp,
+  AlertCircle
 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { getStats, getLeads, getVehicles, getReservations } from '@/lib/api-client';
 
-interface DashboardStats {
-  vehicles: { total: number; published: number; reserved: number; sold: number };
-  leads: { total: number; new: number; contacted: number; closed: number };
-  reservations: { total: number; pending: number; paid: number };
-  revenue: { month: number; previous: number };
+interface Stats {
+  vehicles: number;
+  leads: number;
+  leadsNew: number;
+  auctions: number;
+  reservations: number;
 }
 
-interface RecentVehicle {
+interface Lead {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  status: string;
+  brand?: string;
+  model?: string;
+  createdAt: string;
+}
+
+interface Vehicle {
   id: string;
   slug: string;
   brand: string;
@@ -41,18 +43,48 @@ interface RecentVehicle {
   year: number;
   price: number;
   status: string;
-  photos: { url: string }[];
+  primaryPhoto?: string;
 }
 
-interface RecentLead {
+interface Reservation {
   id: string;
   customerName: string;
-  customerPhone: string;
+  amount: number;
   status: string;
-  source: string;
-  vehicle?: { brand: string; model: string };
+  brand?: string;
+  model?: string;
   createdAt: string;
 }
+
+const statusColors: Record<string, string> = {
+  new: 'bg-blue-100 text-blue-800',
+  contacted: 'bg-yellow-100 text-yellow-800',
+  scheduled: 'bg-green-100 text-green-800',
+  closed_won: 'bg-emerald-100 text-emerald-800',
+  closed_lost: 'bg-red-100 text-red-800',
+};
+
+const statusLabels: Record<string, string> = {
+  new: 'Nuevo',
+  contacted: 'Contactado',
+  scheduled: 'Agendado',
+  closed_won: 'Cerrado',
+  closed_lost: 'Perdido',
+};
+
+const reservationStatusColors: Record<string, string> = {
+  pending_payment: 'bg-yellow-100 text-yellow-800',
+  paid: 'bg-blue-100 text-blue-800',
+  confirmed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
+};
+
+const reservationStatusLabels: Record<string, string> = {
+  pending_payment: 'Pendiente',
+  paid: 'Pagado',
+  confirmed: 'Confirmado',
+  cancelled: 'Cancelado',
+};
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('es-CL', {
@@ -62,332 +94,256 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
-const statusColors: Record<string, string> = {
-  draft: 'bg-gray-200 text-gray-700',
-  published: 'bg-green-100 text-green-700',
-  reserved: 'bg-yellow-100 text-yellow-700',
-  sold: 'bg-blue-100 text-blue-700',
-  hidden: 'bg-gray-100 text-gray-600',
-};
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('es-CL', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
 
-const leadStatusColors: Record<string, string> = {
-  new: 'bg-blue-100 text-blue-700',
-  contacted: 'bg-yellow-100 text-yellow-700',
-  scheduled: 'bg-purple-100 text-purple-700',
-  closed_won: 'bg-green-100 text-green-700',
-  closed_lost: 'bg-red-100 text-red-700',
-};
-
-export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentVehicles, setRecentVehicles] = useState<RecentVehicle[]>([]);
-  const [recentLeads, setRecentLeads] = useState<RecentLead[]>([]);
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<Stats>({ vehicles: 0, leads: 0, leadsNew: 0, auctions: 0, reservations: 0 });
+  const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
+  const [recentVehicles, setRecentVehicles] = useState<Vehicle[]>([]);
+  const [recentReservations, setRecentReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchDashboardData() {
+    async function fetchData() {
       try {
-        // Fetch stats
-        const [vehiclesRes, leadsRes, reservationsRes] = await Promise.all([
-          fetch('/api/vehicles?status=all'),
-          fetch('/api/leads'),
-          fetch('/api/reservations'),
+        const [statsRes, leadsRes, vehiclesRes, reservationsRes] = await Promise.all([
+          getStats(),
+          getLeads(),
+          getVehicles({ limit: 5 }),
+          getReservations(),
         ]);
 
-        const vehiclesData = await vehiclesRes.json();
-        const leadsData = await leadsRes.json();
-        const reservationsData = await reservationsRes.json();
-
-        if (vehiclesData.success) {
-          const vehicles = vehiclesData.data;
-          setStats({
-            vehicles: {
-              total: vehicles.length,
-              published: vehicles.filter((v: {status: string}) => v.status === 'published').length,
-              reserved: vehicles.filter((v: {status: string}) => v.status === 'reserved').length,
-              sold: vehicles.filter((v: {status: string}) => v.status === 'sold').length,
-            },
-            leads: {
-              total: leadsData.pagination?.total || 0,
-              new: leadsData.data?.filter((l: {status: string}) => l.status === 'new').length || 0,
-              contacted: leadsData.data?.filter((l: {status: string}) => l.status === 'contacted').length || 0,
-              closed: leadsData.data?.filter((l: {status: string}) => l.status === 'closed_won').length || 0,
-            },
-            reservations: {
-              total: reservationsData.pagination?.total || 0,
-              pending: reservationsData.data?.filter((r: {status: string}) => r.status === 'pending_payment').length || 0,
-              paid: reservationsData.data?.filter((r: {status: string}) => r.status === 'paid').length || 0,
-            },
-            revenue: {
-              month: Math.floor(Math.random() * 50000000) + 10000000,
-              previous: Math.floor(Math.random() * 40000000) + 10000000,
-            },
-          });
-          setRecentVehicles(vehicles.slice(0, 5));
-        }
-
-        if (leadsData.success) {
-          setRecentLeads(leadsData.data.slice(0, 5));
-        }
+        if (statsRes.success && statsRes.data) setStats(statsRes.data);
+        if (leadsRes.success && leadsRes.data) setRecentLeads(leadsRes.data.slice(0, 5));
+        if (vehiclesRes.success && vehiclesRes.data) setRecentVehicles(vehiclesRes.data.slice(0, 5));
+        if (reservationsRes.success && reservationsRes.data) setRecentReservations(reservationsRes.data.slice(0, 5));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false);
       }
     }
-
-    fetchDashboardData();
+    fetchData();
   }, []);
-
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="space-y-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 bg-muted rounded-lg animate-pulse" />
-          ))}
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  const revenueChange = stats ? ((stats.revenue.month - stats.revenue.previous) / stats.revenue.previous * 100).toFixed(1) : 0;
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Page Header */}
+      <div className="p-4 md:p-6 space-y-6">
+        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Resumen general de tu negocio</p>
+          <p className="text-muted-foreground">Resumen de la actividad</p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {/* Vehicles */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Vehículos</CardTitle>
-              <Car className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.vehicles.published || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                de {stats?.vehicles.total || 0} en inventario
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Badge variant="outline" className="text-xs">
-                  {stats?.vehicles.reserved} reservados
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Leads */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Leads</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.leads.total || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.leads.new} nuevos hoy
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Badge variant="outline" className="text-xs">
-                  {stats?.leads.closed} cerrados
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Reservations */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Reservas</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.reservations.total || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.reservations.pending} pendientes de pago
-              </p>
-              <div className="flex gap-2 mt-2">
-                <Badge variant="outline" className="text-xs">
-                  {stats?.reservations.paid} pagadas
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Revenue */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Ingresos (Mes)</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatPrice(stats?.revenue.month || 0)}</div>
-              <div className="flex items-center gap-1 text-xs">
-                {parseFloat(revenueChange) >= 0 ? (
-                  <>
-                    <TrendingUp className="h-3 w-3 text-green-500" />
-                    <span className="text-green-500">+{revenueChange}%</span>
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="h-3 w-3 text-red-500" />
-                    <span className="text-red-500">{revenueChange}%</span>
-                  </>
-                )}
-                <span className="text-muted-foreground">vs mes anterior</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Button asChild className="h-auto py-4 flex-col gap-2">
-            <a href="/admin/inventario/vehiculos/nuevo">
-              <Car className="h-5 w-5" />
-              Nuevo Vehículo
-            </a>
-          </Button>
-          <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-            <a href="/admin/ventas/leads">
-              <MessageSquare className="h-5 w-5" />
-              Ver Leads
-            </a>
-          </Button>
-          <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-            <a href="/admin/ventas/reservas">
-              <ShoppingCart className="h-5 w-5" />
-              Reservas
-            </a>
-          </Button>
-          <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-            <a href="/admin/reportes">
-              <TrendingUp className="h-5 w-5" />
-              Reportes
-            </a>
-          </Button>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Recent Vehicles */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Vehículos Recientes</CardTitle>
-                <Button variant="ghost" size="sm" asChild>
-                  <a href="/admin/inventario/vehiculos">Ver todos</a>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {recentVehicles.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Car className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No hay vehículos</p>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <Car className="h-5 w-5 text-blue-600" />
                 </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Vehículos</p>
+                  <p className="text-2xl font-bold">{stats.vehicles}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-100">
+                  <Users className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Leads</p>
+                  <p className="text-2xl font-bold">{stats.leads}</p>
+                  {stats.leadsNew > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {stats.leadsNew} nuevos
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-100">
+                  <Clock className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Subastas</p>
+                  <p className="text-2xl font-bold">{stats.auctions}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-100">
+                  <DollarSign className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Reservas</p>
+                  <p className="text-2xl font-bold">{stats.reservations}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Content Grid */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Recent Leads */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg">Leads Recientes</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/admin/ventas/leads">
+                  Ver todos <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse h-12 bg-muted rounded" />
+                  ))}
+                </div>
+              ) : recentLeads.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No hay leads</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Vehículo</TableHead>
-                      <TableHead>Precio</TableHead>
-                      <TableHead>Estado</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentVehicles.map((vehicle) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
-                              {vehicle.photos[0]?.url ? (
-                                <img
-                                  src={vehicle.photos[0].url}
-                                  alt=""
-                                  className="w-full h-full object-cover rounded"
-                                />
-                              ) : (
-                                <Car className="h-5 w-5 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium">{vehicle.brand} {vehicle.model}</p>
-                              <p className="text-xs text-muted-foreground">{vehicle.year}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatPrice(vehicle.price)}</TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[vehicle.status]}>
-                            {vehicle.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="space-y-3">
+                  {recentLeads.map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{lead.customerName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {lead.brand} {lead.model}
+                        </p>
+                      </div>
+                      <Badge className={statusColors[lead.status] || ''}>
+                        {statusLabels[lead.status] || lead.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Recent Leads */}
+          {/* Recent Vehicles */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Leads Recientes</CardTitle>
-                <Button variant="ghost" size="sm" asChild>
-                  <a href="/admin/ventas/leads">Ver todos</a>
-                </Button>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg">Vehículos Recientes</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/admin/inventario/vehiculos">
+                  Ver todos <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent>
-              {recentLeads.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No hay leads</p>
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse h-12 bg-muted rounded" />
+                  ))}
                 </div>
+              ) : recentVehicles.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No hay vehículos</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Vehículo</TableHead>
-                      <TableHead>Estado</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentLeads.map((lead) => (
-                      <TableRow key={lead.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{lead.customerName}</p>
-                            <p className="text-xs text-muted-foreground">{lead.customerPhone}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {lead.vehicle ? (
-                            `${lead.vehicle.brand} ${lead.vehicle.model}`
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={leadStatusColors[lead.status]}>
-                            {lead.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="space-y-3">
+                  {recentVehicles.map((vehicle) => (
+                    <div key={vehicle.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <div className="w-12 h-12 rounded bg-muted overflow-hidden">
+                        <img
+                          src={vehicle.primaryPhoto || `https://picsum.photos/seed/${vehicle.slug}/100/100`}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {vehicle.brand} {vehicle.model}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {vehicle.year} • {formatPrice(vehicle.price)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Reservations */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg">Reservas Recientes</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/admin/ventas/reservas">
+                  Ver todos <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse h-12 bg-muted rounded" />
+                  ))}
+                </div>
+              ) : recentReservations.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">No hay reservas</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-sm text-muted-foreground border-b">
+                        <th className="pb-2">Cliente</th>
+                        <th className="pb-2">Vehículo</th>
+                        <th className="pb-2">Monto</th>
+                        <th className="pb-2">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {recentReservations.map((reservation) => (
+                        <tr key={reservation.id}>
+                          <td className="py-3">
+                            <p className="font-medium">{reservation.customerName}</p>
+                          </td>
+                          <td className="py-3">
+                            <p className="text-muted-foreground">
+                              {reservation.brand} {reservation.model}
+                            </p>
+                          </td>
+                          <td className="py-3">
+                            <p className="font-medium">{formatPrice(reservation.amount)}</p>
+                          </td>
+                          <td className="py-3">
+                            <Badge className={reservationStatusColors[reservation.status] || ''}>
+                              {reservationStatusLabels[reservation.status] || reservation.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </CardContent>
           </Card>
