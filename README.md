@@ -189,3 +189,4 @@ bun run d1:migrate   # Migrar schema a D1
 ---
 
 Desarrollado con ❤️ para MTG Automotora
+
