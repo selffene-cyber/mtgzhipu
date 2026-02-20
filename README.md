@@ -1,141 +1,191 @@
-# 🚀 Welcome to Z.ai Code Scaffold
+# 🚗 MTG Automotora
 
-A modern, production-ready web application scaffold powered by cutting-edge technologies, designed to accelerate your development with [Z.ai](https://chat.z.ai)'s AI-powered coding assistance.
+Plataforma completa para gestión de automotora con catálogo público, panel de administración, subastas, consignaciones y más.
 
-## ✨ Technology Stack
+![MTG Automotora](https://picsum.photos/seed/mtg-banner/1200/400)
 
-This scaffold provides a robust foundation built with:
+## ✨ Características
 
-### 🎯 Core Framework
-- **⚡ Next.js 16** - The React framework for production with App Router
-- **📘 TypeScript 5** - Type-safe JavaScript for better developer experience
-- **🎨 Tailwind CSS 4** - Utility-first CSS framework for rapid UI development
+### 🌐 Portal Público
+- **Catálogo de vehículos** con filtros avanzados (marca, año, precio, transmisión, combustible, región)
+- **Ficha de vehículo** con galería de fotos, especificaciones y contacto WhatsApp
+- **Carrusel de destacados** en página principal
+- **PWA Mobile First** - 100% responsive
 
-### 🧩 UI Components & Styling
-- **🧩 shadcn/ui** - High-quality, accessible components built on Radix UI
-- **🎯 Lucide React** - Beautiful & consistent icon library
-- **🌈 Framer Motion** - Production-ready motion library for React
-- **🎨 Next Themes** - Perfect dark mode in 2 lines of code
+### 🎯 Subastas
+- Sistema de pujas en tiempo real
+- Anti-sniping (extensión automática)
+- Depósitos de garantía
+- Flujo de pago post-subasta
 
-### 📋 Forms & Validation
-- **🎣 React Hook Form** - Performant forms with easy validation
-- **✅ Zod** - TypeScript-first schema validation
+### 📝 Consignaciones
+- Formulario público para consignantes
+- Flujo de aprobación con estados
+- Integración con inventario
 
-### 🔄 State Management & Data Fetching
-- **🐻 Zustand** - Simple, scalable state management
-- **🔄 TanStack Query** - Powerful data synchronization for React
-- **🌐 Fetch** - Promise-based HTTP request
+### 💼 Panel de Administración
+- Dashboard con métricas en tiempo real
+- Gestión de inventario (CRUD de vehículos)
+- Pipeline de leads con drag & drop
+- Gestión de reservas y pagos
+- Administración de subastas
+- Reportes y gráficos avanzados
 
-### 🗄️ Database & Backend
-- **🗄️ Prisma** - Next-generation TypeScript ORM
-- **🔐 NextAuth.js** - Complete open-source authentication solution
+### 👤 Portal de Vendedor
+- Dashboard personalizado
+- Leads asignados
+- Seguimiento de clientes
 
-### 🎨 Advanced UI Features
-- **📊 TanStack Table** - Headless UI for building tables and datagrids
-- **🖱️ DND Kit** - Modern drag and drop toolkit for React
-- **📊 Recharts** - Redefined chart library built with React and D3
-- **🖼️ Sharp** - High performance image processing
+## 🛠️ Stack Tecnológico
 
-### 🌍 Internationalization & Utilities
-- **🌍 Next Intl** - Internationalization library for Next.js
-- **📅 Date-fns** - Modern JavaScript date utility library
-- **🪝 ReactUse** - Collection of essential React hooks for modern development
+| Tecnología | Uso |
+|------------|-----|
+| **Next.js 16** | Framework principal (App Router) |
+| **TypeScript** | Tipado estático |
+| **Tailwind CSS 4** | Estilos utility-first |
+| **shadcn/ui** | Componentes UI |
+| **Prisma** | ORM de base de datos |
+| **Zustand** | Estado del cliente |
+| **TanStack Query** | Estado del servidor |
+| **Recharts** | Gráficos |
+| **Cloudflare D1** | Base de datos serverless |
+| **Cloudflare R2** | Almacenamiento de archivos |
+| **Cloudflare Pages** | Hosting |
 
-## 🎯 Why This Scaffold?
-
-- **🏎️ Fast Development** - Pre-configured tooling and best practices
-- **🎨 Beautiful UI** - Complete shadcn/ui component library with advanced interactions
-- **🔒 Type Safety** - Full TypeScript configuration with Zod validation
-- **📱 Responsive** - Mobile-first design principles with smooth animations
-- **🗄️ Database Ready** - Prisma ORM configured for rapid backend development
-- **🔐 Auth Included** - NextAuth.js for secure authentication flows
-- **📊 Data Visualization** - Charts, tables, and drag-and-drop functionality
-- **🌍 i18n Ready** - Multi-language support with Next Intl
-- **🚀 Production Ready** - Optimized build and deployment settings
-- **🤖 AI-Friendly** - Structured codebase perfect for AI assistance
-
-## 🚀 Quick Start
+## 📦 Instalación
 
 ```bash
-# Install dependencies
+# Clonar repositorio
+git clone https://github.com/selffene-cyber/mtgzhipu.git
+cd mtgzhipu
+
+# Instalar dependencias
 bun install
 
-# Start development server
+# Configurar variables de entorno
+cp .env.example .env
+
+# Crear base de datos local
+bun run db:push
+bun run db:seed
+
+# Iniciar desarrollo
 bun run dev
-
-# Build for production
-bun run build
-
-# Start production server
-bun start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see your application running.
+## 🚀 Deployment en Cloudflare
 
-## 🤖 Powered by Z.ai
+Ver guía completa en [DEPLOY.md](./DEPLOY.md)
 
-This scaffold is optimized for use with [Z.ai](https://chat.z.ai) - your AI assistant for:
+### Resumen rápido:
 
-- **💻 Code Generation** - Generate components, pages, and features instantly
-- **🎨 UI Development** - Create beautiful interfaces with AI assistance  
-- **🔧 Bug Fixing** - Identify and resolve issues with intelligent suggestions
-- **📝 Documentation** - Auto-generate comprehensive documentation
-- **🚀 Optimization** - Performance improvements and best practices
+1. **Subir a GitHub** 
+2. **Crear D1 Database** llamada `bdmtgzhipu`
+3. **Crear R2 Bucket** llamado `mtgzhipu-files`
+4. **Conectar en Cloudflare Pages**
+5. **Configurar bindings y variables de entorno**
+6. **Deploy!**
 
-Ready to build something amazing? Start chatting with Z.ai at [chat.z.ai](https://chat.z.ai) and experience the future of AI-powered development!
+## 🔐 Credenciales Demo
 
-## 📁 Project Structure
+| Rol | Email | Password |
+|-----|-------|----------|
+| Admin | admin@mtg.cl | admin123 |
+| Ventas | ventas@mtg.cl | ventas123 |
+
+## 📁 Estructura del Proyecto
 
 ```
 src/
-├── app/                 # Next.js App Router pages
-├── components/          # Reusable React components
-│   └── ui/             # shadcn/ui components
-├── hooks/              # Custom React hooks
-└── lib/                # Utility functions and configurations
+├── app/
+│   ├── admin/              # Panel de administración
+│   │   ├── dashboard/      # Dashboard principal
+│   │   ├── inventario/     # Gestión de vehículos
+│   │   ├── subastas/       # Administrar subastas
+│   │   ├── consignaciones/ # Gestionar consignaciones
+│   │   ├── ventas/         # Leads y reservas
+│   │   └── reportes/       # Métricas y reportes
+│   ├── api/                # API Routes
+│   ├── catalogo/           # Catálogo público
+│   ├── subastas/           # Portal de subastas
+│   ├── consignar/          # Formulario de consignación
+│   ├── vendedor/           # Portal de vendedor
+│   ├── login/              # Autenticación
+│   └── vehiculo/[slug]/    # Ficha de vehículo
+├── components/
+│   ├── layout/             # Componentes de layout
+│   └── ui/                 # Componentes shadcn/ui
+├── lib/
+│   ├── db.ts               # Cliente Prisma
+│   ├── db-d1.ts            # Adaptador D1
+│   └── api-utils.ts        # Utilidades API
+└── stores/
+    ├── auth-store.ts       # Estado de autenticación
+    └── app-store.ts        # Estado global
 ```
 
-## 🎨 Available Features & Components
+## 🗄️ Modelos de Base de Datos
 
-This scaffold includes a comprehensive set of modern web development tools:
+- **User** - Usuarios del sistema
+- **Vehicle** - Vehículos en inventario
+- **VehiclePhoto** - Fotos de vehículos
+- **Reservation** - Reservas de vehículos
+- **Auction** - Subastas
+- **Bid** - Pujas
+- **Consignment** - Consignaciones
+- **Lead** - Prospects/clientes
+- **PaymentTransaction** - Transacciones de pago
+- **AuditLog** - Registro de auditoría
 
-### 🧩 UI Components (shadcn/ui)
-- **Layout**: Card, Separator, Aspect Ratio, Resizable Panels
-- **Forms**: Input, Textarea, Select, Checkbox, Radio Group, Switch
-- **Feedback**: Alert, Toast (Sonner), Progress, Skeleton
-- **Navigation**: Breadcrumb, Menubar, Navigation Menu, Pagination
-- **Overlay**: Dialog, Sheet, Popover, Tooltip, Hover Card
-- **Data Display**: Badge, Avatar, Calendar
+## 🎨 Diseño
 
-### 📊 Advanced Data Features
-- **Tables**: Powerful data tables with sorting, filtering, pagination (TanStack Table)
-- **Charts**: Beautiful visualizations with Recharts
-- **Forms**: Type-safe forms with React Hook Form + Zod validation
+- **Colores principales**: Azul (#3B82F6) y grises
+- **Estilo**: Hexagonal, profesional, elegante
+- **Responsive**: Mobile First
+- **PWA**: Manifest configurado
 
-### 🎨 Interactive Features
-- **Animations**: Smooth micro-interactions with Framer Motion
-- **Drag & Drop**: Modern drag-and-drop functionality with DND Kit
-- **Theme Switching**: Built-in dark/light mode support
+## 📱 Módulos
 
-### 🔐 Backend Integration
-- **Authentication**: Ready-to-use auth flows with NextAuth.js
-- **Database**: Type-safe database operations with Prisma
-- **API Client**: HTTP requests with Fetch + TanStack Query
-- **State Management**: Simple and scalable with Zustand
+### Portal Público (`/`)
+- Home con carrusel y destacados
+- Catálogo con filtros
+- Ficha de vehículo
+- Formulario de consignación
 
-### 🌍 Production Features
-- **Internationalization**: Multi-language support with Next Intl
-- **Image Optimization**: Automatic image processing with Sharp
-- **Type Safety**: End-to-end TypeScript with Zod validation
-- **Essential Hooks**: 100+ useful React hooks with ReactUse for common patterns
+### Admin (`/admin/*`)
+- Dashboard con KPIs
+- CRUD de vehículos
+- Pipeline de leads
+- Gestión de reservas
+- Administración de subastas
+- Reportes con gráficos
 
-## 🤝 Get Started with Z.ai
+### Vendedor (`/vendedor/*`)
+- Dashboard personal
+- Leads asignados
 
-1. **Clone this scaffold** to jumpstart your project
-2. **Visit [chat.z.ai](https://chat.z.ai)** to access your AI coding assistant
-3. **Start building** with intelligent code generation and assistance
-4. **Deploy with confidence** using the production-ready setup
+### Subastas (`/subastas`)
+- Listado de subastas activas
+- Sistema de pujas
+
+## 📄 Scripts
+
+```bash
+bun run dev          # Desarrollo local
+bun run build        # Build producción
+bun run lint         # Verificar código
+bun run db:push      # Actualizar schema
+bun run db:seed      # Datos demo
+bun run pages:build  # Build para Cloudflare
+bun run d1:migrate   # Migrar schema a D1
+```
+
+## 📞 Contacto
+
+**MTG Automotora**
+- Email: gerencia@mastg.cl
+- WhatsApp: +56 9 1234 5678
 
 ---
 
-Built with ❤️ for the developer community. Supercharged by [Z.ai](https://chat.z.ai) 🚀
+Desarrollado con ❤️ para MTG Automotora
