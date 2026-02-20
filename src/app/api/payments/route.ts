@@ -1,7 +1,9 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
-import { randomUUID } from 'crypto';
+
 
 const createPaymentSchema = z.object({
   entityType: z.enum(['reservation', 'auction_deposit']),
@@ -19,10 +21,10 @@ export async function POST(request: NextRequest) {
     const validated = createPaymentSchema.parse(body);
 
     // Create pending transaction
-    const idempotencyKey = randomUUID();
+    const idempotencyKey = crypto.randomUUID();
     const transaction = await db.paymentTransaction.create({
       data: {
-        id: randomUUID(),
+        id: crypto.randomUUID(),
         reservationId: validated.entityType === 'reservation' ? validated.entityId : null,
         auctionId: validated.entityType === 'auction_deposit' ? validated.entityId : null,
         provider: validated.provider,

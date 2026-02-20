@@ -1,5 +1,7 @@
 'use client';
 
+export const runtime = 'edge';
+
 import { PublicLayout } from '@/components/layout/public-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

@@ -1,7 +1,9 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
-import { randomUUID } from 'crypto';
+
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const token = randomUUID();
+    const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     await db.session.create({

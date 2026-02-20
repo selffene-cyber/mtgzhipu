@@ -1,7 +1,9 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { z } from 'zod';
-import { randomUUID } from 'crypto';
+
 
 const paymentWebhookSchema = z.object({
   entity_type: z.enum(['reservation', 'auction_deposit']),
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Create transaction record
     const transaction = await db.paymentTransaction.create({
       data: {
-        id: randomUUID(),
+        id: crypto.randomUUID(),
         reservationId: validated.entity_type === 'reservation' ? validated.entity_id : null,
         auctionId: validated.entity_type === 'auction_deposit' ? validated.entity_id : null,
         provider: 'placeholder',
