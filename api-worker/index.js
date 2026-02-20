@@ -50,7 +50,7 @@ export default {
         params.push(limit, offset);
         
         const stmt = env.DB.prepare(sql);
-        const query = params.length > 2 ? stmt.bind(...params) : stmt;
+        const query = stmt.bind(...params);
         const { results } = await query.all();
         
         // Get total count

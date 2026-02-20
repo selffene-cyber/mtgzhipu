@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createConsignment } from '@/lib/api-client';
 
 const brands = ['Toyota', 'Chevrolet', 'Ford', 'Nissan', 'Hyundai', 'Kia', 'Mazda', 'Honda', 'Volkswagen', 'BMW', 'Mercedes-Benz', 'Audi'];
 
@@ -50,18 +51,19 @@ export default function ConsignarPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/consignments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          year: parseInt(formData.year),
-          km: formData.km ? parseInt(formData.km) : null,
-          expectedPrice: formData.expectedPrice ? parseInt(formData.expectedPrice) : null,
-        }),
+      const data = await createConsignment({
+        ownerName: formData.ownerName,
+        ownerEmail: formData.ownerEmail || undefined,
+        ownerPhone: formData.ownerPhone,
+        ownerRut: formData.ownerRut || undefined,
+        brand: formData.brand,
+        model: formData.model,
+        year: parseInt(formData.year),
+        km: formData.km ? parseInt(formData.km) : undefined,
+        expectedPrice: formData.expectedPrice ? parseInt(formData.expectedPrice) : undefined,
+        notes: formData.notes || undefined,
       });
 
-      const data = await res.json();
       if (data.success) {
         setSuccess(true);
       }

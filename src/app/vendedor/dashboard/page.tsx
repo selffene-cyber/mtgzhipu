@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
+import { getLeads, updateLead } from '@/lib/api-client';
 
 interface Lead {
   id: string;
@@ -64,9 +65,8 @@ export default function VendedorDashboard() {
   useEffect(() => {
     async function fetchLeads() {
       try {
-        const res = await fetch('/api/leads');
-        const data = await res.json();
-        if (data.success) {
+        const data = await getLeads();
+        if (data.success && data.data) {
           setLeads(data.data);
         }
       } catch (error) {
@@ -87,13 +87,9 @@ export default function VendedorDashboard() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/leads/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const result = await updateLead(id, { status: newStatus });
       
-      if (res.ok) {
+      if (result.success) {
         setLeads(leads.map(l => 
           l.id === id ? { ...l, status: newStatus } : l
         ));

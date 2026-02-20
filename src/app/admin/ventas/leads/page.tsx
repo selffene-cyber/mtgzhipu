@@ -30,6 +30,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getLeads, updateLead } from '@/lib/api-client';
 
 interface Lead {
   id: string;
@@ -81,15 +82,9 @@ export default function AdminLeadsPage() {
     async function fetchLeads() {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (statusFilter && statusFilter !== 'all') {
-          params.set('status', statusFilter);
-        }
+        const data = await getLeads();
         
-        const res = await fetch(`/api/leads?${params}`);
-        const data = await res.json();
-        
-        if (data.success) {
+        if (data.success && data.data) {
           setLeads(data.data);
         }
       } catch (error) {
@@ -108,13 +103,9 @@ export default function AdminLeadsPage() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/leads/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const result = await updateLead(id, { status: newStatus });
       
-      if (res.ok) {
+      if (result.success) {
         setLeads(leads.map(l => 
           l.id === id ? { ...l, status: newStatus } : l
         ));

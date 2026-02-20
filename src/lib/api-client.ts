@@ -185,4 +185,11 @@ export async function createReservation(data: any) {
   });
 }
 
+export async function updateReservation(id: string, data: any) {
+  return fetchApi<any>(`/api/reservations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
 export { API_URL };

@@ -31,6 +31,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getConsignments, updateConsignment } from '@/lib/api-client';
 
 interface Consignment {
   id: string;
@@ -68,9 +69,8 @@ export default function AdminConsignacionesPage() {
   useEffect(() => {
     async function fetchConsignments() {
       try {
-        const res = await fetch('/api/consignments');
-        const data = await res.json();
-        if (data.success) {
+        const data = await getConsignments();
+        if (data.success && data.data) {
           setConsignments(data.data);
         }
       } catch (error) {
@@ -84,13 +84,9 @@ export default function AdminConsignacionesPage() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/consignments/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const result = await updateConsignment(id, { status: newStatus });
       
-      if (res.ok) {
+      if (result.success) {
         setConsignments(consignments.map(c => 
           c.id === id ? { ...c, status: newStatus } : c
         ));

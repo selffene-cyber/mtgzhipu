@@ -44,6 +44,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getVehicles, updateVehicle } from '@/lib/api-client';
 
 interface Vehicle {
   id: string;
@@ -95,15 +96,9 @@ export default function AdminVehiculosPage() {
     async function fetchVehicles() {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (statusFilter && statusFilter !== 'all') {
-          params.set('status', statusFilter);
-        }
+        const data = await getVehicles();
         
-        const res = await fetch(`/api/vehicles?${params}`);
-        const data = await res.json();
-        
-        if (data.success) {
+        if (data.success && data.data) {
           setVehicles(data.data);
         }
       } catch (error) {
@@ -119,17 +114,13 @@ export default function AdminVehiculosPage() {
     `${v.brand} ${v.model}`.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleStatusChange = async (slug: string, newStatus: string) => {
+  const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/vehicles/${slug}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const result = await updateVehicle(id, { status: newStatus });
       
-      if (res.ok) {
+      if (result.success) {
         setVehicles(vehicles.map(v => 
-          v.slug === slug ? { ...v, status: newStatus } : v
+          v.id === id ? { ...v, status: newStatus } : v
         ));
       }
     } catch (error) {

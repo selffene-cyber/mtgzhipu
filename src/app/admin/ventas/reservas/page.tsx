@@ -31,6 +31,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getReservations, updateReservation } from '@/lib/api-client';
 
 interface Reservation {
   id: string;
@@ -85,15 +86,9 @@ export default function AdminReservasPage() {
     async function fetchReservations() {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (statusFilter && statusFilter !== 'all') {
-          params.set('status', statusFilter);
-        }
+        const data = await getReservations();
         
-        const res = await fetch(`/api/reservations?${params}`);
-        const data = await res.json();
-        
-        if (data.success) {
+        if (data.success && data.data) {
           setReservations(data.data);
         }
       } catch (error) {
@@ -112,13 +107,9 @@ export default function AdminReservasPage() {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const res = await fetch(`/api/reservations/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      const result = await updateReservation(id, { status: newStatus });
       
-      if (res.ok) {
+      if (result.success) {
         setReservations(reservations.map(r => 
           r.id === id ? { ...r, status: newStatus } : r
         ));

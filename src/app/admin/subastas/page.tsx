@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { getAuctions } from '@/lib/api-client';
 
 interface Auction {
   id: string;
@@ -62,9 +63,8 @@ export default function AdminSubastasPage() {
   useEffect(() => {
     async function fetchAuctions() {
       try {
-        const res = await fetch('/api/admin/auctions');
-        const data = await res.json();
-        if (data.success) {
+        const data = await getAuctions();
+        if (data.success && data.data) {
           setAuctions(data.data);
         }
       } catch (error) {
